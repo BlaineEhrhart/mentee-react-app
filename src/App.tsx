@@ -1,28 +1,55 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 function App() {
-    const [todo, setTodo] = useState('');
+
+    const todoArray: { description: string, checked: boolean }[] = [];
+    const [todo, setTodo] = useState(todoArray);
     const [input, setInput] = useState('');
+    const emptyInput = input.length === 0;
 
     function addTodo() {
-        setTodo(input);
+
+        const newTodoState = todo;
+        newTodoState.push({
+            description: input,
+            checked: false
+        });
+        setTodo([...newTodoState]);
+        setInput('');
     }
+
+    function checkForEnter(e: any) {
+
+        if (emptyInput) {
+            return;
+        }
+
+        if (e.keyCode === 13) {
+            addTodo();
+        }
+    }
+
+    function toggleListItem(i: any) {
+
+        todo[i].checked = !todo[i].checked;
+        setTodo([...todo]);
+    }
+
+    // todo: JSX.Element[] seems a little jank
+    const todoList: JSX.Element[] = [];
+    todo.forEach((item, i) => {
+        todoList.push(<li key={i}
+                          onClick={e => { toggleListItem(i) }}
+                          style={{textDecoration: (item.checked ? 'line-through' : 'none')}}>{item.description}</li>);
+    });
 
     return (
         <div className="App">
             <header className="App-header">
-                <p>todo</p>
+                <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyUp={checkForEnter} />
+                <button type="button" onClick={addTodo} disabled={emptyInput}>Add Todo</button>
                 <ul>
-                    <li>Add input box</li>
-                    <li>Button</li>
-                    <li>Action for button</li>
-                    <li>store first item state</li>
-                </ul>
-
-                <input type="text" value={input} onChange={e => setInput(e.target.value)}  />
-                <button type="button" onClick={addTodo}>Add Todo</button>
-                <ul>
-                    <li>{todo}</li>
+                    {todoList}
                 </ul>
             </header>
         </div>
