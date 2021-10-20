@@ -1,57 +1,81 @@
-import { useState } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 
+import {fetchFromFarDistantDatabase, saveToFarDistantDatabase} from './AppEffects';
+import Todo from './Todo';
+import './App.css';
+
+interface ITodo {
+    description: string;
+    completed: boolean;
+};
 function App() {
 
-    const todoArray: { description: string, checked: boolean }[] = [];
-    const [todo, setTodo] = useState(todoArray);
+    const [todos, setTodos] = useState<ITodo[]>([]);
     const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        console.log('fetchFromFarDistantDatabase');
+        fetchFromFarDistantDatabase()
+            .then((data: any) => {
+                setTodos(data);
+                setIsLoading(false);
+                console.log('fetchFromFarDistantDatabase', {data});
+            });
+    }, []);
+
     const emptyInput = input.length === 0;
 
-    function addTodo() {
+    function onSubmit(e: FormEvent) {
 
-        const newTodoState = todo;
-        newTodoState.push({
-            description: input,
-            checked: false
-        });
-        setTodo([...newTodoState]);
-        setInput('');
-    }
-
-    function checkForEnter(e: any) {
+        e.preventDefault();
 
         if (emptyInput) {
             return;
         }
 
-        if (e.keyCode === 13) {
-            addTodo();
-        }
+        const newTodos = [...todos, {
+            description: input,
+            completed: false
+        }];
+        setTodos(newTodos);
+        setInput('');
+        saveToFarDistantDatabase(newTodos);
     }
 
-    function toggleListItem(i: any) {
+    function toggleTodo(i: number) {
 
-        todo[i].checked = !todo[i].checked;
-        setTodo([...todo]);
+        const newTodos = [...todos];
+        newTodos[i] = {
+            ...newTodos[i],
+            completed: !newTodos[i].completed
+        };
+        setTodos(newTodos);
     }
 
-    // todo: JSX.Element[] seems a little jank
-    const todoList: JSX.Element[] = [];
-    todo.forEach((item, i) => {
-        todoList.push(<li key={i}
-                          onClick={e => { toggleListItem(i) }}
-                          style={{textDecoration: (item.checked ? 'line-through' : 'none')}}>{item.description}</li>);
-    });
+    function clearCompletedTodos() {
+
+        const newTodos = todos.filter(todo => !todo.completed);
+        setTodos(newTodos);
+        saveToFarDistantDatabase(newTodos);
+    }
+
+    console.log('Re-rendering app');
 
     return (
-        <div className="App">
-            <header className="App-header">
-                <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyUp={checkForEnter} />
-                <button type="button" onClick={addTodo} disabled={emptyInput}>Add Todo</button>
-                <ul>
-                    {todoList}
-                </ul>
-            </header>
+        <div className="App mt-8">
+            <form onSubmit={onSubmit}>
+                <input type="text" value={input} onChange={e => setInput(e.target.value)} />
+                <button className="btn" type="submit" disabled={emptyInput}>Add Todo</button>
+            </form>
+            {isLoading && <p className="mt-8 text-center"><strong>Loading...</strong></p>}
+            <ul className="mt-8 list">
+                {todos.map((item, i) => <Todo key={i} text={item.description} completed={item.completed} onClick={() => toggleTodo(i)} />)}
+            </ul>
+            {!isLoading && todos.length === 0 && <p className="mt-8 text-center"><strong>Yay! You have no todos.</strong></p>}
+            <p className="text-center mt-8">
+                <button className="btn" onClick={clearCompletedTodos} type="button" disabled={todos.filter(t => t.completed).length === 0}>Clear Completed Todos</button>
+            </p>
         </div>
     );
 }
