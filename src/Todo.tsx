@@ -9,7 +9,7 @@ export default function Todo(props: ITodoProps) {
 
     return <li className="todo" onClick={() => { props.onClick() }}
                style={{textDecoration: (props.completed ? 'line-through' : 'none')}}>
-        <input type="checkbox" checked={props.completed} />
+        <input type="checkbox" checked={props.completed} readOnly />
         {props.text}
     </li>
 }
